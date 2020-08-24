@@ -1,0 +1,49 @@
+version: '3.5'
+
+services:
+    app:
+        image: hanabosocom/go-base:dev
+        user: ${DEV_UID}:${DEV_GID}
+        env_file:
+          - .env
+        volumes:
+            - ./:/app
+            - ${GOPATH}/pkg:/go/pkg
+            - ${DOCKER_SOCKET_PATH}:/var/run/docker.sock
+
+    elasticsearch01:
+        image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.0
+        environment:
+            node.name: elasticsearch01
+            cluster.name: elasticsearch-cluster
+            discovery.seed_hosts: elasticsearch02,elasticsearch03
+            cluster.initial_master_nodes: elasticsearch01,elasticsearch02,elasticsearch03
+        ports:
+            - ${DEV_IP}:9200:9200
+
+    elasticsearch02:
+        image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.0
+        environment:
+            node.name: elasticsearch02
+            cluster.name: elasticsearch-cluster
+            discovery.seed_hosts: elasticsearch01,elasticsearch03
+            cluster.initial_master_nodes: elasticsearch01,elasticsearch02,elasticsearch03
+        ports:
+            - ${DEV_IP}:9202:9200
+
+    elasticsearch03:
+        image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.0
+        environment:
+            node.name: elasticsearch03
+            cluster.name: elasticsearch-cluster
+            discovery.seed_hosts: elasticsearch01,elasticsearch02
+            cluster.initial_master_nodes: elasticsearch01,elasticsearch02,elasticsearch03
+        ports:
+            - ${DEV_IP}:9203:9200
+
+    kibana:
+        image: docker.elastic.co/kibana/kibana-oss:7.9.0
+        environment:
+            ELASTICSEARCH_HOSTS: '["http://elasticsearch01:9200","http://elasticsearch02:9200","http://elasticsearch03:9200"]'
+        ports:
+            - ${DEV_IP}:5601:5601

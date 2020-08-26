@@ -2,6 +2,7 @@ package elasticsearch
 
 import (
 	"io/ioutil"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -18,8 +19,7 @@ type Connection struct {
 	MayLog bool
 }
 
-func (connection *Connection) Connect(dsn string) {
-	var client *elasticsearch.Client
+func (connection *Connection) Connect(dsn string, timeout time.Duration, retries int) {
 	var err error
 
 	if connection.Log == nil {
@@ -27,33 +27,47 @@ func (connection *Connection) Connect(dsn string) {
 	}
 
 	if connection.MayLog {
-		client, err = elasticsearch.NewClient(elasticsearch.Config{
-			Addresses: strings.Split(dsn, ","),
-			Logger:    &logger{Log: connection.Log},
+		connection.Client, err = elasticsearch.NewClient(elasticsearch.Config{
+			Addresses:            strings.Split(dsn, ","),
+			MaxRetries:           retries,
+			EnableRetryOnTimeout: true,
+			Transport: &http.Transport{
+				ResponseHeaderTimeout: timeout,
+				DialContext: (&net.Dialer{
+					Timeout: timeout,
+				}).DialContext,
+			},
+			Logger: &logger{Log: connection.Log},
 		})
 	} else {
-		client, err = elasticsearch.NewClient(elasticsearch.Config{
-			Addresses: strings.Split(dsn, ","),
+		connection.Client, err = elasticsearch.NewClient(elasticsearch.Config{
+			Addresses:            strings.Split(dsn, ","),
+			MaxRetries:           retries,
+			EnableRetryOnTimeout: true,
+			Transport: &http.Transport{
+				ResponseHeaderTimeout: timeout,
+				DialContext: (&net.Dialer{
+					Timeout: timeout,
+				}).DialContext,
+			},
 		})
 	}
 
 	if err != nil {
 		connection.logContext().Error(err)
 		time.Sleep(time.Second)
-		connection.Connect(dsn)
+		connection.Connect(dsn, timeout, retries)
 
 		return
 	}
 
-	if _, err := client.Ping(); err != nil {
+	if _, err := connection.Client.Ping(); err != nil {
 		connection.logContext().Error(err)
 		time.Sleep(time.Second)
-		connection.Connect(dsn)
+		connection.Connect(dsn, timeout, retries)
 
 		return
 	}
-
-	connection.Client = client
 }
 
 func (connection *Connection) Disconnect() {
@@ -81,7 +95,9 @@ type logger struct {
 func (logger *logger) LogRoundTrip(request *http.Request, _ *http.Response, _ error, _ time.Time, duration time.Duration) error {
 	if request != nil && request.Body != nil && request.Body != http.NoBody {
 		if body, err := ioutil.ReadAll(request.Body); err == nil {
-			logger.Log.Info("[%d ms] %s", duration.Milliseconds(), string(body))
+			logger.Log.WithFields(map[string]interface{}{
+				"package": "ElasticSearch",
+			}).Info("[%d ms] %s", duration.Milliseconds(), string(body))
 		}
 	}
 

@@ -96,12 +96,12 @@ func TestConnectError(t *testing.T) {
 	search(t)
 }
 
-func getDsn() string {
+func getDsn() (string, time.Duration, int) {
 	if dsn := os.Getenv("ELASTICSEARCH_DSN"); dsn != "" {
-		return dsn
+		return dsn, time.Minute, 10
 	}
 
-	return "http://127.0.0.50:9200,http://127.0.0.50:9202,http://127.0.0.50:9203"
+	return "http://127.0.0.50:9200,http://127.0.0.50:9202,http://127.0.0.50:9203", time.Minute, 10
 }
 
 func getPartialDsn() []string {

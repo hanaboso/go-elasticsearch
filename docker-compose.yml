@@ -12,7 +12,7 @@ services:
             - ${DOCKER_SOCKET_PATH}:/var/run/docker.sock
 
     elasticsearch01:
-        image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.0
+        image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
         environment:
             node.name: elasticsearch01
             cluster.name: elasticsearch-cluster
@@ -22,7 +22,7 @@ services:
             - ${DEV_IP}:9200:9200
 
     elasticsearch02:
-        image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.0
+        image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
         environment:
             node.name: elasticsearch02
             cluster.name: elasticsearch-cluster
@@ -32,7 +32,7 @@ services:
             - ${DEV_IP}:9202:9200
 
     elasticsearch03:
-        image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.0
+        image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
         environment:
             node.name: elasticsearch03
             cluster.name: elasticsearch-cluster
@@ -42,7 +42,7 @@ services:
             - ${DEV_IP}:9203:9200
 
     kibana:
-        image: docker.elastic.co/kibana/kibana-oss:7.9.0
+        image: docker.elastic.co/kibana/kibana-oss:7.10.2
         environment:
             ELASTICSEARCH_HOSTS: '["http://elasticsearch01:9200","http://elasticsearch02:9200","http://elasticsearch03:9200"]'
         ports:
